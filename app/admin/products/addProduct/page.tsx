@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import AdminNavbar from "@/app/components/AdminNavbar";
 import BackButton from "@/app/components/BackButton";
 
-// ...
-
 export default function AddProduct() {
   const [pName, setPName] = useState("");
   const [pDescription, setPDescription] = useState("");
@@ -14,8 +12,8 @@ export default function AddProduct() {
   const [pAmount, setPAmount] = useState(0);
   const [pPrice, setPPrice] = useState(0);
   const [images, setImages] = useState(["", "", ""]);
-  const [supplierId, setSupplierId] = useState(""); // เก็บ supplier ที่เลือก
-  const [suppliers, setSuppliers] = useState([]); // เก็บรายชื่อ supplier ที่โหลดมา
+  const [supplierId, setSupplierId] = useState("");
+  const [suppliers, setSuppliers] = useState(null); // Set initial state to null
   const [supplierPrice, setSupplierPrice] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -26,10 +24,12 @@ export default function AddProduct() {
       setLoading(true);
       try {
         const response = await axios.get("http://localhost:8000/suppliers");
-        setSuppliers(response.data);
-        setLoading(false);
+        setSuppliers(response.data || []); // If no data, set to empty array
       } catch (err) {
         console.error("Error fetching suppliers:", err);
+        setSuppliers([]); // Set to empty array if error occurs
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -48,20 +48,11 @@ export default function AddProduct() {
     setError(null);
 
     if (!pName || !pDescription || !pLocation || !pAmount || !pPrice || !images[0] || !supplierId) {
-      if (!pPrice) {
-        alert("กรุณากรอก ราคา ให้สมเหตุสมผล")
-        setLoading(false);
-        return;
-      }
-      if (!pAmount) {
-        alert("กรุณากรอก จำนวน ให้สมเหตุสมผล")
-        setLoading(false);
-        return;
-      }
       alert("กรุณากรอกข้อมูลทุกช่องให้ครบถ้วน");
       setLoading(false);
       return;
     }
+
     const formData = {
       p_name: pName,
       p_description: pDescription,
@@ -74,54 +65,36 @@ export default function AddProduct() {
     };
 
     try {
-      console.log(formData);
-      const response = await axios.post(
-        "http://localhost:8000/product",
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // เข้าถึงข้อมูลที่ return มา
+      const response = await axios.post("http://localhost:8000/product", formData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       const data = response.data;
-      console.log(formData);
-      console.log("Data ที่ได้จากการเพิ่มสินค้า:", data);
       postSupplierOrderList(data.id);
-      alert("สินค้าเพิ่มสำเร็จแล้ว")
+      alert("สินค้าเพิ่มสำเร็จแล้ว");
       router.push("/admin/products");
     } catch (err) {
-      console.error(err);
+      console.error("Error adding product:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const postSupplierOrderList = async (product_id: string) => {
-    var supplierIdInt = parseInt(supplierId);
-    var product_idInt = parseInt(product_id);
+  const postSupplierOrderList = async (product_id) => {
     const payload = {
-      supplier_id: supplierIdInt,
+      supplier_id: parseInt(supplierId),
       price: supplierPrice,
-      product_id: product_idInt,
+      product_id: parseInt(product_id),
       quantity: pAmount,
     };
 
-    console.log("Payload being sent:", payload); // Log the payload for debugging
-
     try {
-      const response = await axios.post(
-        `http://localhost:8000/supplierOrderLists`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("Success:", response.data);
+      await axios.post("http://localhost:8000/supplierOrderLists", payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
     } catch (err) {
       console.error("Error:", err.response ? err.response.data : err.message);
       setError("เกิดข้อผิดพลาดในการเพิ่มรายการสั่งซื้อจากซัพพลายเออร์");
@@ -140,30 +113,30 @@ export default function AddProduct() {
         <h1 className="text-3xl font-bold mb-4">เพิ่มสินค้าใหม่</h1>
         {error && <div className="text-red-500 mb-4">{error}</div>}
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-6 rounded-lg shadow-md"
-        >
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
           <div className="mb-4">
             <label className="block text-gray-700">ผู้จัดจำหน่าย</label>
-            <select
-              value={supplierId}
-              onChange={(e) => setSupplierId(e.target.value)}
-              required
-              className="border border-gray-300 rounded w-full px-4 py-2"
-            >
-              <option value="">เลือกผู้จัดจำหน่าย</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </option>
-              ))}
-            </select>
+            {suppliers && suppliers.length > 0 ? (
+              <select
+                value={supplierId}
+                onChange={(e) => setSupplierId(e.target.value)}
+                required
+                className="border border-gray-300 rounded w-full px-4 py-2"
+              >
+                <option value="">เลือกผู้จัดจำหน่าย</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-gray-500">ไม่พบรายชื่อผู้จัดจำหน่าย</p>
+            )}
           </div>
 
-          {/* ส่วนฟอร์มอื่นๆ จะแสดงก็ต่อเมื่อมีการเลือก supplier แล้วเท่านั้น */}
           {supplierId && (
-            <>
+           <>
               <div className="mb-4">
                 <label className="block text-gray-700">
                   ราคาที่ซื้อมาจาก ผู้จัดจำหน่าย
@@ -251,18 +224,17 @@ export default function AddProduct() {
                   />
                 ))}
               </div>
-
-              <button
-                type="submit"
-                className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition ${
-                  loading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-                disabled={loading}
-              >
-                {loading ? "กำลังเพิ่ม..." : "เพิ่มสินค้าใหม่"}
-              </button>
             </>
           )}
+          <button
+            type="submit"
+            className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={loading}
+          >
+            {loading ? "กำลังเพิ่ม..." : "เพิ่มสินค้าใหม่"}
+          </button>
         </form>
       </div>
     </div>
