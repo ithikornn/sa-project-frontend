@@ -12,7 +12,7 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [notFound, setNotFound] = useState(false); // state เพื่อเช็คการไม่พบสินค้า
+  const [notFound, setNotFound] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function Products() {
     setNotFound(false);
     try {
       const response = await axios.get("http://localhost:8000/products");
-      setProducts(response.data);
+      setProducts(response.data || []); // Ensure products is always an array
       setLoading(false);
     } catch (error) {
       console.error("Error fetching the products:", error);
@@ -51,12 +51,8 @@ export default function Products() {
         }
       );
 
-      if (response.data.length === 0) {
-        // ถ้าไม่พบสินค้า
-        setNotFound(true);
-      } else {
-        setProducts(response.data);
-      }
+      setProducts(response.data || []); // Ensure products is always an array
+      setNotFound(response.data.length === 0);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching the filtered products:", error);
@@ -84,7 +80,7 @@ export default function Products() {
       <header>
         <AdminNavbar />
         <div className="bg-gray-100">
-        <BackButton />
+          <BackButton />
         </div>
       </header>
       <div className="p-10 bg-gray-100 min-h-screen">
@@ -125,7 +121,7 @@ export default function Products() {
           <div className="text-center text-gray-500">ไม่พบสินค้าที่ค้นหา</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product) => (
+            {(products || []).map((product) => ( // Safely map over products
               <div
                 key={product.id}
                 onClick={() => router.push(`products/${product.id}`)}

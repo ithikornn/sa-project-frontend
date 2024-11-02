@@ -11,7 +11,7 @@ interface SupplierOrderListInterface {
 }
 
 export default function Expense() {
-    const [supplierOrderLists, setSupplierOrderLists] = useState<SupplierOrderListInterface[]>([]);
+    const [supplierOrderLists, setSupplierOrderLists] = useState<SupplierOrderListInterface[] | null >(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -41,22 +41,27 @@ export default function Expense() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 p-6">
+        <div className="min-h-screen bg-gray-100">
             <header><AdminNavbar /></header>
-            <ul className="space-y-4">
-                {supplierOrderLists.map((item) => (
-                    <li
-                        key={item.id}
-                        className="bg-white shadow-md rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                    >
-                        <div className="text-lg font-medium">Order ID: {item.id}</div>
-                        <div className="text-sm text-gray-600">Supplier ID: {item.supplier_id}</div>
-                        <div className="text-sm text-gray-600">Product ID: {item.product_id}</div>
-                        <div className="text-sm text-gray-600">Quantity: {item.quantity}</div>
-                        <div className="text-sm text-gray-600">Price: {item.price.toFixed(2)} บาท</div>
-                    </li>
-                ))}
-            </ul>
+            {supplierOrderLists && supplierOrderLists.length > 0 ? (
+                <ul className="space-y-4">
+                    {supplierOrderLists.map((item) => (
+                        <li
+                            key={item.id}
+                            className="bg-white shadow-md rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                        >
+                            <div className="text-lg font-medium">Order ID: {item.id}</div>
+                            <div className="text-sm text-gray-600">Supplier ID: {item.supplier_id}</div>
+                            <div className="text-sm text-gray-600">Product ID: {item.product_id}</div>
+                            <div className="text-sm text-gray-600">Quantity: {item.quantity}</div>
+                            <div className="text-sm text-gray-600">Price: {item.price.toFixed(2)} บาท</div>
+                        </li>
+                    ))}
+                </ul>
+            )
+            : (
+                <div className="text-gray-600">No supplier orders available.</div>
+            )}
         </div>
     );
 }

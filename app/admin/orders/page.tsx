@@ -22,26 +22,26 @@ const statusMapping: { [key: string]: string } = {
   X: "Canceled",
 };
 
-const statuses = Object.keys(statusMapping); // Get all status keys
+const statuses = Object.keys(statusMapping);
 
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<string>(""); // State for selected status
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
   const router = useRouter();
+
   useEffect(() => {
     async function fetchData() {
       try {
         const url = `http://localhost:8000/orders`;
         const response = await axios.get(url);
-        setOrders(response.data); // Sets the orders data to state
+        setOrders(response.data || []);
       } catch (error) {
         console.error("Error fetching orders:", error);
       }
     }
     fetchData();
-  }, []); // Added an empty dependency array to avoid repeated calls
+  }, []);
 
-  // Filter orders based on selected status
   const filteredOrders = selectedStatus
     ? orders.filter((order) => order.o_status === selectedStatus)
     : orders;
@@ -77,7 +77,9 @@ export default function Orders() {
           </select>
         </div>
 
-        {filteredOrders.length > 0 ? (
+        {orders.length === 0 ? (
+          <p className="text-gray-500">No orders available.</p>
+        ) : filteredOrders.length > 0 ? (
           <ul className="space-y-4">
             {filteredOrders.map((order) => (
               <li
@@ -107,7 +109,7 @@ export default function Orders() {
             ))}
           </ul>
         ) : (
-          <p className="text-gray-500">No orders found.</p>
+          <p className="text-gray-500">No orders match the selected filter.</p>
         )}
       </div>
     </div>
